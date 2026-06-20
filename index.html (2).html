@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Uma carta para ti</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;1,400&family=Lato:wght@300;400&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  min-height: 100vh;
+  background: radial-gradient(ellipse at 60% 40%, #f7e8d5 0%, #ede0cc 40%, #d9c9ad 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Lato', sans-serif;
+  overflow: hidden;
+}
+
+/* ── FLOATING PETALS ── */
+.petal {
+  position: fixed;
+  pointer-events: none;
+  opacity: 0.2;
+  animation: drift linear infinite;
+}
+@keyframes drift {
+  0%   { transform: translateY(-60px) rotate(0deg); opacity: 0; }
+  10%  { opacity: 0.2; }
+  90%  { opacity: 0.15; }
+  100% { transform: translateY(110vh) rotate(400deg); opacity: 0; }
+}
+
+/* ── HINT ── */
+.hint {
+  text-align: center;
+  font-size: 11px;
+  color: #8a6a40;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-top: 16px;
+  opacity: 0.7;
+  transition: opacity 0.4s;
+  position: relative;
+  z-index: 20;
+}
+.hint.hide { opacity: 0; pointer-events: none; }
+
+/* ── STAGE ── */
+.stage {
+  position: relative;
+  width: 360px;
+  height: 240px;
+}
+
+/* ── ENVELOPE ── */
+.envelope {
+  position: absolute;
+  width: 360px;
+  height: 240px;
+  top: 0; left: 0;
+  cursor: pointer;
+  transition: opacity 0.5s 0.55s ease, transform 0.5s 0.55s ease;
+  z-index: 10;
+}
+.envelope.vanish {
+  opacity: 0;
+  transform: translateY(36px) scale(0.94);
+  pointer-events: none;
+}
+
+.env-base {
+  position: absolute;
+  inset: 0;
+  background: #e2c98a;
+  border-radius: 4px 4px 10px 10px;
+  box-shadow: 0 10px 40px rgba(90,55,10,0.25), 0 2px 8px rgba(90,55,10,0.12);
+}
+.env-base::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    linear-gradient(135deg, rgba(0,0,0,0.09) 0%, transparent 50%),
+    linear-gradient(225deg, rgba(0,0,0,0.09) 0%, transparent 50%);
+}
+
+.wax-seal {
+  position: absolute;
+  bottom: 36px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px; height: 50px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 35%, #e05050, #a02020 65%, #701010);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  box-shadow: 0 3px 10px rgba(100,10,10,0.45), inset 0 1px 3px rgba(255,160,160,0.2);
+  z-index: 3;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+.envelope.open .wax-seal {
+  transform: translateX(-50%) scale(0);
+  opacity: 0;
+}
+
+.env-flap {
+  position: absolute;
+  top: 0; left: 0;
+  width: 360px; height: 180px;
+  transform-origin: top center;
+  transition: transform 0.7s cubic-bezier(.4,0,.2,1);
+  z-index: 10;
+}
+.env-flap-front {
+  position: absolute;
+  inset: 0;
+  background: #cdb06a;
+  clip-path: polygon(0% 0%, 100% 0%, 50% 78%);
+  border-radius: 4px 4px 0 0;
+}
+.env-flap-front::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.07) 0%, transparent 60%);
+  clip-path: polygon(0% 0%, 100% 0%, 50% 78%);
+}
+.env-flap-back {
+  position: absolute;
+  inset: 0;
+  background: #d4bc80;
+  clip-path: polygon(0% 0%, 100% 0%, 50% 78%);
+  transform: rotateX(180deg);
+  backface-visibility: hidden;
+}
+.envelope.open .env-flap {
+  transform: perspective(800px) rotateX(-175deg);
+}
+
+/* ── LETTER ── */
+.letter {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, 80px);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 5;
+
+  width: min(500px, 90vw);
+  max-height: 80vh;
+  background: #fdf6ee;
+  border-radius: 3px;
+  padding: 30px 32px 38px;
+  box-shadow: 0 8px 40px rgba(80,50,10,0.22), 0 2px 8px rgba(80,50,10,0.10);
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  transition: none;
+}
+
+/* Scrollbar styling */
+.letter::-webkit-scrollbar { width: 5px; }
+.letter::-webkit-scrollbar-track { background: transparent; }
+.letter::-webkit-scrollbar-thumb { background: #d4bc80; border-radius: 10px; }
+
+/* Paper ruled lines */
+.letter::before {
+  content: '';
+  position: absolute;
+  top: 80px; left: 32px; right: 32px; bottom: 38px;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 28px,
+    rgba(180,145,90,0.16) 28px,
+    rgba(180,145,90,0.16) 29px
+  );
+  pointer-events: none;
+}
+
+.flourish { position: absolute; font-size: 15px; color: #c0666a; opacity: 0.28; }
+.flourish.tl { top: 7px;  left: 9px; }
+.flourish.tr { top: 7px;  right: 9px;  transform: scaleX(-1); }
+.flourish.bl { bottom: 9px; left: 9px;  transform: scaleY(-1); }
+.flourish.br { bottom: 9px; right: 9px; transform: scale(-1); }
+
+.letter-emoji {
+  text-align: center;
+  font-size: 30px;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.letter h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 14px;
+  font-weight: 400;
+  font-style: italic;
+  color: #c0666a;
+  text-align: center;
+  margin-bottom: 16px;
+  letter-spacing: 0.03em;
+}
+
+.letter p {
+  font-family: 'Playfair Display', serif;
+  font-size: 13.5px;
+  color: #3b2a1a;
+  line-height: 2;
+  margin-bottom: 14px;
+  position: relative;
+}
+
+.letter .signature {
+  text-align: right;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 13.5px;
+  color: #6b4c30;
+  margin-top: 8px;
+}
+.letter .signature span { color: #c0666a; }
+
+/* Phase 1: rises up */
+.letter.rising {
+  opacity: 1;
+  transform: translate(-50%, -140px);
+  transition: transform 0.7s 0.45s cubic-bezier(.22,1,.36,1),
+              opacity   0.3s 0.45s ease;
+}
+
+/* Phase 2: centred */
+.letter.settled {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -50%);
+  transition: transform 0.6s ease, box-shadow 0.6s ease;
+  box-shadow: 0 20px 70px rgba(80,50,10,0.20), 0 2px 8px rgba(80,50,10,0.08);
+}
+
+.letter.settled .letter-emoji {
+  animation: heartbeat 2.2s 0.3s ease-in-out infinite;
+}
+@keyframes heartbeat {
+  0%,100% { transform: scale(1); }
+  30%      { transform: scale(1.2); }
+  50%      { transform: scale(1); }
+  68%      { transform: scale(1.1); }
+}
+</style>
+</head>
+<body>
+
+<div style="display:flex;flex-direction:column;align-items:center;">
+  <div class="stage">
+
+    <!-- Letter (behind envelope initially) -->
+    <div class="letter" id="letter">
+      <span class="flourish tl">❧</span>
+      <span class="flourish tr">❧</span>
+      <span class="flourish bl">❧</span>
+      <span class="flourish br">❧</span>
+
+      <span class="letter-emoji">🌸</span>
+      <h1>Para a minha irma em Cristo Denicia</h1>
+
+      <p>Denica Mangue,</p>
+
+<p>Quero te dizer algo do fundo do coração.</p>
+
+<p>Tu és uma das melhores pessoas que eu já conheci na vida. Mesmo com pouco tempo de convivência — mais ou menos um ano e alguns meses — parece que nos conhecemos há muito mais tempo, como se sempre tivéssemos feito parte da vida um do outro. Isso não é comum, e eu valorizo muito isso.</p>
+
+<p>Vejo-te como uma irmã em Cristo. E quero que saibas que nunca te vou esquecer na minha vida. Sempre que eu penso em pregar na igreja ou falar sobre fé, muitas vezes lembro-me de ti ou até te uso como exemplo, porque a tua forma de ser, a tua caminhada e a tua presença têm um impacto positivo em mim.</p>
+
+<p>Tu és uma pessoa incrível, esforçada e dedicada, e eu admiro muito isso em ti. Não é só o que fazes, mas a forma como fazes — com sinceridade, com coração e com fé. Isso não passa despercebido.</p>
+
+<p>A tua amizade é muito importante para mim. Sou realmente grato por tudo o que já fizeste por mim, pelo que estás a fazer e por tudo o que ainda vais fazer, mesmo sem saberes. Pequenas coisas, grandes coisas — tudo isso tem valor.</p>
+
+<p>Quero que saibas também que eu te incluo sempre nas minhas orações. Peço a Deus que te guarde, te fortaleça, te dê sabedoria e te leve mais longe do que imaginas. Não existe limite para o que Deus pode fazer na tua vida, e também não existe limite para a nossa amizade e respeito.</p>
+
+<p>Muito obrigado por seres essa pessoa. Que Deus continue a te abençoar e a guiar os teus passos.</p>
+
+<p>Com carinho e respeito.</p>
+
+
+      <p class="signature">Com todo o carinho do mundo <span>♡</span></p>
+      <p class="signature">Vagner Tivane <span>♡</span></p>
+    </div>
+
+    <!-- Envelope (on top) -->
+    <div class="envelope" id="envelope" onclick="openLetter()" role="button" aria-label="Abrir carta">
+      <div class="env-base"></div>
+      <div class="wax-seal">💌</div>
+      <div class="env-flap">
+        <div class="env-flap-front"></div>
+        <div class="env-flap-back"></div>
+      </div>
+    </div>
+
+  </div>
+  <div class="hint" id="hint">clica para abrir ✦</div>
+</div>
+
+<script>
+  /* Floating petals */
+  const sym = ['🌸','✿','❀','❤','✦','·'];
+  for (let i = 0; i < 22; i++) {
+    const el = document.createElement('div');
+    el.className = 'petal';
+    el.textContent = sym[Math.floor(Math.random() * sym.length)];
+    el.style.cssText = `left:${Math.random()*100}vw;font-size:${10+Math.random()*14}px;animation-duration:${9+Math.random()*14}s;animation-delay:${-(Math.random()*20)}s;`;
+    document.body.appendChild(el);
+  }
+
+  let opened = false;
+  function openLetter() {
+    if (opened) return;
+    opened = true;
+
+    const env    = document.getElementById('envelope');
+    const letter = document.getElementById('letter');
+    const hint   = document.getElementById('hint');
+
+    hint.classList.add('hide');
+    env.classList.add('open');
+    letter.classList.add('rising');
+
+    setTimeout(() => env.classList.add('vanish'), 300);
+
+    setTimeout(() => {
+      letter.classList.remove('rising');
+      letter.classList.add('settled');
+    }, 1050);
+  }
+</script>
+</body>
+</html>
